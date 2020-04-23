@@ -1,0 +1,15 @@
+{% extends "index.html"%}
+{% from 'bootstrap/form.html ' import render_form %}
+
+{% block title%}注册{% endblock %}
+
+
+{% block content %}
+<style>body{margin-top:50px;}</style>
+<div class="col-12 text-center mt-lg-5"><div class="page-header"><h1>注册</h1></div></div>
+<div class="col-3"></div>
+<div class="col-6">
+    {{render_form(form)}}
+</div>
+<div class="col-3"></div>
+{% endblock %}

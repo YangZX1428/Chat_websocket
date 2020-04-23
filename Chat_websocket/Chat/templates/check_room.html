@@ -1,0 +1,94 @@
+{% extends "./index.html" %}
+{% from 'bootstrap/pagination.html' import render_pagination %}
+{% from 'bootstrap/form.html ' import render_form %}
+{% block title %}
+查看房间
+{% endblock %}
+
+{% block content%}
+<style>
+    body{margin-top:50px;}
+
+
+</style>
+<div class="col-1"></div>
+<div class="col-10">
+    <div class="page-header mt-2 d-inline-block">
+        <div class="float-left" style="width:300px;height:148px;">
+            <h1 class="mt-4">共{{pagination.total}}间房间</h1>
+        </div>
+        <div class="float-left">
+            {{render_form(form,action=url_for('user_bp.check_room',filter = request.args.get("filter","normal")))}}
+        </div>
+    </div>
+    <div class="d-inline-block">
+        <ul class="nav nav-tabs">
+            <li class="nav-item">
+                <a href="{{url_for('user_bp.check_room',filter = 'normal')}}" class=" {% if request.args.get('filter','normal') == 'normal'%}active{% endif %} nav-link text-secondary">普通房间</a>
+            </li>
+            <li class="nav-item">
+                <a href="{{url_for('user_bp.check_room',filter = 'anonymous')}}" class="{% if request.args.get('filter','normal') == 'anonymous'%}active{% endif %} nav-link text-secondary">匿名房间</a>
+            </li>
+        </ul>
+    </div>
+    {% if rooms %}
+    <table class="table table-striped">
+        <thead>
+        <tr class="text-center">
+            <th>房间号</th>
+            <th>房间名</th>
+            <th>房主</th>
+            <th>房间简介</th>
+            <th>房间人数</th>
+            <th>操作</th>
+        </tr>
+        </thead>
+        {% for room in rooms%}
+        <tr class="text-center">
+            <td>{{room.id}}</td>
+            <td>
+                <p>{{room.name|striptags|truncate(20)}}</p>
+            </td>
+            <td><p>{{create_user[loop.index-1].username}}</p></td>
+            <td>
+                <p>{{room.info|truncate(20)}}</p>
+            </td>
+            <td>
+                {% if request.args.get("filter","normal") == "normal"%}
+                {{room.users|length}}
+                {% else %}
+                {{online_list[room.id-1]}}
+                {% endif %}
+            </td>
+            <td>
+                {% if request.args.get("filter","normal") == "normal"%}
+                <a href="{{url_for('room_bp.chat_page',room_id = room.id,next = request.full_path)}}" class="btn btn-primary"
+                   onclick="return confirm('确定进入该房间吗?')">进入房间</a>
+                {% else %}
+                <a href="{{url_for('room_bp.set_info',room_id = room.id,next = request.full_path)}}" class="btn btn-secondary"
+                   onclick="return confirm('确定进入该匿名房间吗?')">进入匿名房间</a>
+                {% endif %}
+            </td>
+        </tr>
+        {% endfor %}
+    </table>
+    {% else %}
+
+    <h1>未找到房间!</h1>
+
+    {% endif %}
+    {% if pagination.total > 10 %}
+    <div>
+        {{render_pagination(pagination,align = "center",prev = "<",next = ">")}}
+    </div>
+    {% endif %}
+</div>
+<div class="col-1"></div>
+{% endblock %}
+{% block script%}
+<script>
+    $(function(){
+        $('#name').attr("placeholder","在此输入房间名查询");
+    })
+</script>
+{% endblock %}

@@ -1,0 +1,237 @@
+{% extends "index.html"%}
+
+{% block title%}欢迎进入匿名聊天室{% endblock %}
+
+
+{% block content %}
+<style>
+    body{margin-top:50px;}
+    .room-info{
+        position:fixed;
+        top:44px;
+        left:0px;
+        width:250px;
+    }
+    #message-textarea{
+            width:950px;
+            min-height:35px;
+            background-color:#D0D0D0;
+            border:1px solid;
+            resize:none;
+            border:1px solid #D0D0D0;
+            border-radius:3px;
+    }
+    #room-status p{
+        line-height:10px;
+    }
+    #message-textarea:empty:before{
+        content:attr(data-placeholder);
+        color:grey;
+    }
+    #message-textarea:focus:before{
+        content:none;
+    }
+
+
+
+
+
+</style>
+
+<div class="modal fade Share-modal">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h3>分享房间&nbsp;<strong style="font-size:15px;color:red;">输入下列url即可加入</strong></h3>
+                <button class="close" data-dismiss="modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="form-group">
+                    <input type="text" class="form-control"
+                           value="{{url_for('room_bp.chat_page',room_id = r.id,_external = True)}}" readonly>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<div class="room-info" style="background-color:#D0D0D0;border-radius:5px;z-index:1;">
+    <img src="{% if r.face == 'default'%}{{avatars.default(size='l')}} {% else%} {{url_for('static',filename='room_faces/'+r.face)}}{% endif %}"
+         alt="#" width="250px" height="250px">
+    <div class="info" style="float:left;">
+        <p class="mt-1"><strong>房间名:</strong><span style="font-size:15px;color:red;">{{r.name}}</span></p>
+        <p><strong>房间号:</strong><span style="font-size:15px;color:red;">{{r.id}}</span></p>
+        <p><strong>房主:</strong><span style="color:red;">&nbsp;{{author.username}}</span></p>
+        <p><strong>简介:</strong><span style="color:red;">{{r.info}}</span></p>
+        {% if r.create_user_id == current_user.id%}
+        <strong>在线人数:</strong><span id="online-count" style="color:red;">0</span>
+        {% endif %}
+    </div>
+    <div style="display:inline-block;" class="mt-2">
+        <button class="btn btn-secondary float-left ml-4" data-toggle="modal" data-target=".Share-modal">分享</button>
+         <button class="btn btn-danger ml-5" onclick="leave_room('quit');" id="quit">退出房间</button>
+         <button  onclick="leave_room('records')" class="btn btn-sm btn-success mt-2 ml-4 mb-2">查找聊天记录</button>
+    </div>
+</div>
+<div style="width:250px;height:130px;position:fixed;top:575px;border:1px solid #D0D0D0;background-color:#F0F0F0;border-radius:3px;z-index:1" id="room-status" class="ml-3">
+</div>
+{% for message in messages%}
+
+<div class="col-2"></div>
+  <div class="col-8" style="margin-bottom:70px;">
+    <div id="avatars" class="float-left"><img src="{% if message.author.face == 'default'%}{{avatars.default(size='s')}}{% else %}{{url_for('static',filename='user_faces/'+message.author.face)}}{% endif %}" alt="#" height="48px" width="48px" style="border-radius: 5px;"></div>
+    <div id="msg-box" class="float-left ml-2 mb-2" style="max-width: 400px;background-color:  #D0D0D0;border-radius:3px ">
+      <div id="username" class="ml-3 mr-3 mt-1"><strong>{{message.author.username}}</strong><small class="text-secondary ml-3" style="font-size:8px;">&nbsp;{{moment(message.timestamp).format('LLL')}}</small></div>
+      <div id="content" class="ml-3 mr-3"><p class="mt-2" style="font-size:20px;">{{message.body|safe}}</p></div>
+    </div>
+  </div>
+  <div class="col-2"></div>
+
+{% endfor %}
+<div style="position:fixed;left:250px;" class="fixed-bottom">
+     <button class="btn btn-primary float-left" id="emoji">表情</button>
+    <div contenteditable="true" id="message-textarea" data-placeholder="在这输入消息" class="float-left"></div>
+    <button class="btn btn-secondary float-left mb-2 ml-1" id="send">发送</button>
+</div>
+
+
+{% endblock %}
+{% block script%}
+<script>
+var socket
+$(function(){
+    scrollTo(0,document.body.scrollHeight);
+    {% if edit == 1 %}
+    alert("保存成功!");
+    {% elif request.args.get("create")%}
+    alert("创建成功!");
+    {% else %}
+    alert("您已进入房间!");
+    {% endif %}
+
+    //emoji表情包
+    $("#message-textarea").emoji({
+      button:"#emoji",
+      showTab: false,
+      animation: 'fade',
+      icons: [{
+        name: "贴吧表情",
+        path: "../static/img/tieba/",
+        maxNum: 50,
+        file: ".png"
+      }]
+    });
+    //创建socket对象
+    socket = io();
+    //连接事件
+    socket.on('connect',function(){
+        console.log("connect");
+        socket.emit("join",{{r.id}});
+    });
+    $('#send').click(function(){
+      var $textarea = $('#message-textarea');
+      var message = $textarea.html();
+      var msg = [message,"{{r.id}}","{{current_user.username}}"];
+      socket.emit('new message',msg);
+      $textarea.html('');
+
+  });
+  $(document).keypress(function(e) {
+
+　　if (e.which == 13)
+    {
+        e.preventDefault();
+        $('#send').click();
+    }
+    });
+
+    var page=1;
+    $(window).on('scroll',function(){
+	"use strict";
+	 var scrolled = $(window).scrollTop();
+	 if(scrolled <= 0 && document.body.scrollHeight > 800)
+	 {
+	    page = page+1;
+	    console.log(page);
+	    	$.ajax({
+	        url:"{{url_for('room_bp.get_more',room_id = r.id)}}",
+	        type:"get",
+	        success:function(data){
+	            console.log(data["total_pages"]);
+	            if(data["total_pages"] < page){
+	                alert("没有更多记录!");
+	            }
+	            else{
+	                $('#room-status').after(data["html"]).fadeIn(1000);
+	                var moment = $('.flask-moment');
+	                $.each(moment,function(index,value){
+	                    var v = $(value);
+	                    var t = v.text().replace('T',' ');
+                        t = t.replace('Z',' ');
+                        console.log(t);
+                        v.text(t);
+                        v.css("display","inline");
+	                })
+	            }
+
+	        }
+	    });
+	 }
+    });
+    socket.on('new message',function(data){
+      $('.row').append(data.message_html);
+      var moment = $('.flask-moment');
+      $.each(moment,function(index,value){
+      var v = $(value);
+      if (v.css("display") != "inline"){
+      var t = v.text().replace('T',' ');
+      t = t.replace('Z',' ');
+      v.text(t);
+      v.css("display","inline");
+      }
+      })
+      scrollTo(0,document.body.scrollHeight);
+    });
+    setInterval(function(){
+        socket.emit('get count',{{r.id}});
+        if($('.emoji_container').css("display") != "none")
+        {
+            $('.emoji_container').css({"position":"fixed","left":"250px","top":"370px","z-index":"1"});
+        }
+    },500);
+    socket.on("get count",function(data){
+        $('#online-count').html(data.count);
+    });
+    //进入/退出房间监听函数
+    socket.on("status",function(data){
+        if (data.type == "join" ){
+        $("#room-status").append("<p class=\"text-primary\">"+data.username+"</a>进入了房间</p>");
+        }
+        else{
+        $("#room-status").append("<p class=\"text-secondary\">"+data.username+"退出了房间</p>");
+        }
+    });
+    $('.user-page').tooltip();
+    $('.nav-link').click(function(){
+        alert("请先退出聊天室!");
+        return false;
+    })
+
+
+})
+//退出处理函数
+    function leave_room(argument){
+        socket.emit("leave",{{r.id}},function(){
+            socket.disconnect();
+            if (argument == "quit"){
+            window.location.href = "{{url_for('main.index',quit = 1)}}";
+            }
+            else{
+            window.location.href ="{{url_for('room_bp.chat_records',room_id = r.id)}}";
+            }
+    });
+    }
+
+</script>
+{% endblock %}

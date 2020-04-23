@@ -1,0 +1,56 @@
+{% extends "index.html"%}
+{% from 'bootstrap/form.html ' import render_field %}
+{% from 'bootstrap/form.html ' import render_form %}
+
+{% block title%}个人简介{% endblock %}
+
+{% block content %}
+<style>
+    #info{
+        resize:none;
+    }
+    body{
+      margin-top:50px;
+    }
+
+</style>
+<div class="col-4"></div>
+<div class="col-4 text-center mt-5">
+    {% if u.face == "default"%}
+    <img src="{{avatars.default(size='l')}}" alt="#" class="">
+    {% else %}
+    <img src="{{url_for('static',filename='user_faces/'+u.face)}}" alt="#" width="256px" height="256px">
+    {% endif %}
+</div>
+<div class="col-4"></div>
+<div class="col-4 mt-5"></div>
+<div class="col-4 mt-5 text-center">
+    {% if u.id == current_user.id %}
+    {{render_form(form)}}
+    {% else %}
+    <ul class="list-group">
+        <p class="text-secondary" style="font-size:25px;">用户名</p>
+        <li class="list-group-item list-group-item-action"><p class="text-primary">{{u.username}}</p></li>
+        <hr>
+        <p class="text-secondary" style="font-size:25px;">个人简介</p>
+        <li class="list-group-item list-group-item-action"><p class="text-primary">{% if u.info == None%}该用户无简介{% else %}{{u.info}}{% endif %}</p></li>
+    </ul>
+    {% endif %}
+</div>
+<div class="col-4 mt-5"></div>
+
+{% endblock %}
+
+{% block script %}
+<script>
+    $(function(){
+        {% if request.args.get("submit") == 1%}
+        alert("保存成功！");
+        {% endif %}
+        {% if u.id != current_user.id%}
+        $('.active').removeClass('active');
+        {% endif %}
+    })
+
+</script>
+{% endblock %}

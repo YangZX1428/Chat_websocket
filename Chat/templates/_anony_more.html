@@ -1,0 +1,16 @@
+{% for message in messages%}
+<div class="col-2"></div>
+<div class="col-8" style="margin-bottom:70px;">
+    <div id="avatars" class="float-left"><img
+            src="{% if message.face == 'default'%}{{avatars.default(size='s')}}{% else %}{{url_for('static',filename='user_faces/'+message.face)}}{% endif %}"
+            alt="#" height="48px" width="48px" style="border-radius: 5px;"></div>
+    <div id="msg-box" class="float-left ml-2 mb-2"
+         style="max-width: 400px;background-color:  #D0D0D0;border-radius:3px ">
+        <div id="username" class="ml-3 mr-3 mt-1"><strong>{{message.author}}</strong><small
+                class="text-secondary ml-3"
+                style="font-size:8px;">&nbsp;{{moment(message.timestamp).format('LLL')}}</small></div>
+        <div id="content" class="ml-3 mr-3"><p class="mt-2" style="font-size:20px;">{{message.body|safe}}</p></div>
+    </div>
+</div>
+<div class="col-2"></div>
+{% endfor %}
