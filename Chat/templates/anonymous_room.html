@@ -199,8 +199,6 @@ $(function(){
       scrollTo(0,document.body.scrollHeight);
     });
     setInterval(function(){
-        var room_id = {{r.id}};
-        socket.emit("count",room_id);
         if($('.emoji_container').css("display") != "none")
         {
             $('.emoji_container').css({"position":"fixed","left":"250px","top":"370px","z-index":"1"});
@@ -209,15 +207,13 @@ $(function(){
     },100);
     //进入/退出房间监听函数
     socket.on("status",function(data){
+        $('#online-count').html(data.count);
         if (data.type == "join" ){
         $("#room-status").append("<p class=\"text-primary\">"+data.html+"</p>");
         }
         else{
         $("#room-status").append("<p class=\"text-secondary\">"+data.html+"</p>");
         }
-    });
-    socket.on("count",function(data){
-    $("#online-count").html(data.html);
     });
     $('.nav-link').click(function(){
         alert("请先退出聊天室!");
