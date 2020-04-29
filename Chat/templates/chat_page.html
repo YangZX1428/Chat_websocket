@@ -180,6 +180,10 @@ $(function(){
 	 }
     });
     socket.on('new message',function(data){
+      if (data.error == 1){
+        alert(data.message);
+        return;
+      }
       $('.row').append(data.message_html);
       var moment = $('.flask-moment');
       $.each(moment,function(index,value){

@@ -16,7 +16,6 @@ def new_message(msg):
     message = msg[0]
     room_id = msg[1]
     author = msg[2]
-    from_others = 0
     u = User.query.filter_by(username=author).first()
     m = Message(body=message, author_id=current_user.id, room_id=room_id)
     r = Room.query.get_or_404(room_id)
@@ -25,15 +24,16 @@ def new_message(msg):
         if message.strip() is not '':
             db.session.add(m)
             db.session.commit()
+        emit('new message',
+         {'message_html': render_template("_message.html", content=message, face=u.face,
+                                          username=author,m=m),
+          "error":0},
+         broadcast=True, room=room)
     except Exception as e:
         db.session.rollback()
         print(e)
-    if author != current_user.username:
-        from_others = 1
-    emit('new message',
-         {'message_html': render_template("_message.html", content=message, face=u.face,
-                                          username=author, from_others=from_others, m=m)},
-         broadcast=True, room=room)
+        emit("new message",{"error":1,"message":"发送失败!"},room=room)
+
 
 
 # 处理普通房间加入事件,同时更新在线人数
@@ -76,14 +76,16 @@ def anony_message(msg):
     try:
         db.session.add(m)
         db.session.commit()
-    except Exception as e:
-        print(e)
-        db.session.rollback()
-    finally:
         emit('new message',
              {'html': render_template("_message.html", content=message, face=anony_face,
                                       username=anony_name, m=m)},
              broadcast=True, namespace="/anonymous", room=room)
+    except Exception as e:
+        print(e)
+        db.session.rollback()
+        emit("new message",{"error":1,"message":"发送失败!"},room=room,namespace="/anonymous")
+
+
 
 
 # 匿名房间进入房间,并更新在线人数

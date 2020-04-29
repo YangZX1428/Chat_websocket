@@ -184,7 +184,10 @@ $(function(){
 
 
     socket.on('new message',function(data){
-       console.log("new");
+    if (data.error == 1){
+        alert(data.message);
+        return;
+      }
       $('.row').append(data.html);
       var moment = $('.flask-moment');
       $.each(moment,function(index,value){
